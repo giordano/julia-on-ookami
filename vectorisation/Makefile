@@ -15,6 +15,11 @@ LIBRARIES = libvectorisation_gcc_fast.so libvectorisation_gcc.so \
 # GCC 10.3 or later understands a64fx target
 GCC_FLAGS = -Wall -mtune=a64fx -mcpu=a64fx -march=armv8.2-a+sve -fopt-info-vec -fopt-info-vec-missed -fopenmp
 
+# By default, each line of Makefiles is executed in its own subshell, so that `module`
+# commands have no effect on following commands in a recipe.  The special rule `.ONESHELL`
+# tells make to run all commands within a recipe in a single shell.
+.ONESHELL:
+
 all: $(LIBRARIES)
 
 libvectorisation_gcc_fast.so: $(SOURCE)
