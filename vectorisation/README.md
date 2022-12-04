@@ -6,7 +6,7 @@ examples](https://www.stonybrook.edu/commcms/ookami/support/faq/Vectorization_Ex
 by Eva Siegmann.
 
 You can have a look at the [`benchmarks_pluto.jl`](./benchmarks_pluto.jl) script, or you can
-also open it as a Pluto notebook by running the [`./start_notebook.jl`](./start_notebook.jl)
+also open it as a Pluto notebook by running the [`./start_notebook.sh`](./start_notebook.sh)
 script.  If you want to open the notebook from a local browser you need to forward the
 remote port locally with:
 
