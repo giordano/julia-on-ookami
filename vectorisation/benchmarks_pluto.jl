@@ -7,6 +7,9 @@ using InteractiveUtils
 # ╔═╡ 0285a330-7374-11ed-3454-7188768772bc
 using BenchmarkTools
 
+# ╔═╡ 0d69fbf7-45f1-4358-9ba2-8be44e37e25e
+using SLEEFPirates
+
 # ╔═╡ c8308e19-bbcd-4b7b-8e07-47af06fc07c8
 using MCAnalyzer
 
@@ -25,14 +28,15 @@ md"## Preparation"
 # ╔═╡ 33aea1f7-f12d-4d78-bdfa-17ef2e11bd82
 md"""
 [`BenchmarkTools.jl`](https://github.com/JuliaCI/BenchmarkTools.jl) is a popular Julia package for benchmarking functions.
-It can also be used to benchmark functions written in other languages if they have been available in shared libraries that Julia can `@ccall` into.
+It can also be used to benchmark functions written in other languages if they are available in shared libraries that Julia can `@ccall` into.
 """
 
 # ╔═╡ 936f317c-e7a5-46b0-96f0-e5f687cde0ab
 md"""
 By using [metaprogramming](https://docs.julialang.org/en/v1/manual/metaprogramming) we can automatically generate all the functions to call the routines in the shared libraries we have compiled.
 
-Metaprogramming is a powerful tool to automatically generate code that would be otherwise tedious to type. However the following snippet seems a bit unreadable, and it probably is, so [use metaprogramming with care](https://www.youtube.com/watch?v=mSgXWpvQEHE)!
+!!! note
+    Metaprogramming is a powerful tool to automatically generate code that would be otherwise tedious to type. However the following snippet seems a bit unreadable, and it probably is, so [use metaprogramming with care](https://www.youtube.com/watch?v=mSgXWpvQEHE)!
 """
 
 # ╔═╡ 9fa359b2-2b31-431b-93e3-77f84b4a9098
@@ -262,32 +266,88 @@ md"### Other functions"
 @vec_bench f_pow_llvm_fast!(y, x)
   ╠═╡ =#
 
+# ╔═╡ 3b9a76fa-65de-48a0-9bc5-b90e7f6fbf72
+md"""
+### Can we do any better with Julia?
+
+Yes, if we accept to use approximate algorithms, as `-Kfp_relaxed` does. A few third-party packages provide approximate mathematical functions which are more amenable to be vectorised, including [`SLEEFPirates.jl`](https://github.com/JuliaSIMD/SLEEFPirates.jl).
+
+!!! warning
+    Use at your own risk!
+"""
+
+# ╔═╡ 43ef43d1-f087-4421-84b0-30089ed2d831
+# ╠═╡ disabled = true
+#=╠═╡
+@vec_bench y .= SLEEFPirates.sin_fast.(x)
+  ╠═╡ =#
+
+# ╔═╡ 350dd29d-b476-4a21-94ab-5d45420f666b
+# ╠═╡ disabled = true
+#=╠═╡
+@vec_bench f_sin_fujitsu_fast!(y, x)
+  ╠═╡ =#
+
+# ╔═╡ 06f2e7b1-dabd-4a62-8b0e-4efa5d86cd14
+md"""
+Still not as fast as the fast-math version of the Fujitsu compiler, which uses low-level simplified instructions, but close enough and ~10x faster than vanilla `sin` function in Julia. We can see that by using a simpler and approximate algorithm, the new code is easier to vectorise.
+"""
+
+# ╔═╡ a7a87dee-b4bd-4e5d-9053-d57fdc3ecc3b
+code_llvm(broadcast, (typeof(SLEEFPirates.sin_fast), Vector{Float64}); debuginfo=:none)
+
 # ╔═╡ ba4bfc3e-f2df-4558-b4a1-27af1443139b
 md"## Profiling with MCAnalyzer"
+
+# ╔═╡ c6b74fd3-8714-48bb-a76a-e2a40137b174
+md"""
+MCAnalyzer requires adding some assembly annotations in the body of the function, to instrument the profiler, so we have to define our vectorised functions with the markers included.
+"""
+
+# ╔═╡ 441f3101-b07e-425a-ab7a-82b0cce032b1
+function f_marked!(f, y, x)
+	@simd for idx in eachindex(x, y)
+		mark_start()
+		@inbounds y[idx] = f(x[idx])
+	end
+	mark_end()
+end
 
 # ╔═╡ a08b62ed-f963-4778-a80d-be4d5409d34c
 # ╠═╡ disabled = true
 #=╠═╡
-analyze(broadcast, (typeof(simple), Vector{Float64}), :A64FX)
+analyze(f_marked!, (typeof(simple), Vector{Float64}, Vector{Float64}), :A64FX)
   ╠═╡ =#
 
 # ╔═╡ 0e3f1a19-58e4-444f-91b9-cbe4e8f2176e
 # ╠═╡ show_logs = false
 # ╠═╡ disabled = true
 #=╠═╡
-timeline(broadcast, (typeof(simple), Vector{Float64}), :A64FX)
+timeline(f_marked!, (typeof(simple), Vector{Float64}, Vector{Float64}), :A64FX)
   ╠═╡ =#
 
 # ╔═╡ e1efa21f-2fa2-4e48-991b-e39a86df4ac2
 # ╠═╡ disabled = true
 #=╠═╡
-analyze(broadcast, (typeof(inv), Vector{Float64}), :A64FX)
+analyze(f_marked!, (typeof(sin), Vector{Float64}, Vector{Float64}), :A64FX)
   ╠═╡ =#
 
 # ╔═╡ 357549cb-0171-4765-81da-28d928676a87
 # ╠═╡ disabled = true
 #=╠═╡
-timeline(broadcast, (typeof(inv), Vector{Float64}), :A64FX)
+timeline(f_marked!, (typeof(sin), Vector{Float64}, Vector{Float64}), :A64FX)
+  ╠═╡ =#
+
+# ╔═╡ dcd55c5a-bef7-4506-afaf-1f37086d0a3b
+# ╠═╡ disabled = true
+#=╠═╡
+analyze(f_marked!, (typeof(SLEEFPirates.sin_fast), Vector{Float64}, Vector{Float64}), :A64FX)
+  ╠═╡ =#
+
+# ╔═╡ 71e12ed6-ef18-4f0c-a95a-cdcba8397a2b
+# ╠═╡ disabled = true
+#=╠═╡
+timeline(f_marked!, (typeof(SLEEFPirates.sin_fast), Vector{Float64}, Vector{Float64}), :A64FX)
   ╠═╡ =#
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -295,10 +355,12 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 MCAnalyzer = "a81df072-f4bb-11e8-03d3-cfaeda626d18"
+SLEEFPirates = "476501e8-09a2-5ece-8869-fb82de89a1fa"
 
 [compat]
 BenchmarkTools = "~1.3.2"
 MCAnalyzer = "~0.3.3"
+SLEEFPirates = "~0.6.37"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -307,11 +369,47 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0-DEV"
 manifest_format = "2.0"
-project_hash = "1c66a92672e0584735665d71a7ad369daf37f713"
+project_hash = "ce6fcab19b9b3ca73070bb8f33cd59f7ca09d95f"
+
+[[deps.Adapt]]
+deps = ["LinearAlgebra"]
+git-tree-sha1 = "195c5505521008abea5aee4f96930717958eac6f"
+uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+version = "3.4.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 version = "1.1.1"
+
+[[deps.ArrayInterface]]
+deps = ["ArrayInterfaceCore", "Compat", "IfElse", "LinearAlgebra", "Static"]
+git-tree-sha1 = "6d0918cb9c0d3db7fe56bea2bc8638fc4014ac35"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "6.0.24"
+
+[[deps.ArrayInterfaceCore]]
+deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "c46fb7dd1d8ca1d213ba25848a5ec4e47a1a1b08"
+uuid = "30b0a656-2188-435a-8636-2ec0e6a096e2"
+version = "0.1.26"
+
+[[deps.ArrayInterfaceOffsetArrays]]
+deps = ["ArrayInterface", "OffsetArrays", "Static"]
+git-tree-sha1 = "3d1a9a01976971063b3930d1aed1d9c4af0817f8"
+uuid = "015c0d05-e682-4f19-8f0a-679ce4c54826"
+version = "0.1.7"
+
+[[deps.ArrayInterfaceStaticArrays]]
+deps = ["Adapt", "ArrayInterface", "ArrayInterfaceCore", "ArrayInterfaceStaticArraysCore", "LinearAlgebra", "Static", "StaticArrays"]
+git-tree-sha1 = "f12dc65aef03d0a49650b20b2fdaf184928fd886"
+uuid = "b0d46f97-bff5-4637-a19a-dd75974142cd"
+version = "0.1.5"
+
+[[deps.ArrayInterfaceStaticArraysCore]]
+deps = ["Adapt", "ArrayInterfaceCore", "LinearAlgebra", "StaticArraysCore"]
+git-tree-sha1 = "93c8ba53d8d26e124a5a8d4ec914c3a16e6a0970"
+uuid = "dd5226c6-a4d4-4bc7-8575-46859f9c95b9"
+version = "0.1.3"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -325,15 +423,39 @@ git-tree-sha1 = "d9a9701b899b30332bbcb3e1679c41cce81fb0e8"
 uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 version = "1.3.2"
 
+[[deps.BitTwiddlingConvenienceFunctions]]
+deps = ["Static"]
+git-tree-sha1 = "0c5f81f47bbbcf4aea7b2959135713459170798b"
+uuid = "62783981-4cbd-42fc-bca8-16325de8dc4b"
+version = "0.1.5"
+
 [[deps.CEnum]]
 git-tree-sha1 = "eb4cb44a499229b3b8426dcfb5dd85333951ff90"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.4.2"
 
+[[deps.CPUSummary]]
+deps = ["CpuId", "IfElse", "Static"]
+git-tree-sha1 = "a7157ab6bcda173f533db4c93fc8a27a48843757"
+uuid = "2a0fbf3d-bb9c-48f3-b0a9-814d99fd7ab9"
+version = "0.1.30"
+
+[[deps.Compat]]
+deps = ["Dates", "LinearAlgebra", "UUIDs"]
+git-tree-sha1 = "00a2cccc7f098ff3b66806862d275ca3db9e6e5a"
+uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
+version = "4.5.0"
+
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "1.0.1+0"
+
+[[deps.CpuId]]
+deps = ["Markdown"]
+git-tree-sha1 = "fcbb72b032692610bfbdb15018ac16a36cf2e406"
+uuid = "adafc99b-e345-5852-983c-f28acb93d879"
+version = "0.3.1"
 
 [[deps.Dates]]
 deps = ["Printf"]
@@ -357,6 +479,17 @@ deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "TimerOutpu
 git-tree-sha1 = "30488903139ebf4c88f965e7e396f2d652f988ac"
 uuid = "61eb1bfa-7361-4325-ad38-22787b887f55"
 version = "0.16.7"
+
+[[deps.HostCPUFeatures]]
+deps = ["BitTwiddlingConvenienceFunctions", "IfElse", "Libdl", "Static"]
+git-tree-sha1 = "f64b890b2efa4de81520d2b0fbdc9aadb65bdf53"
+uuid = "3e5b6fbb-0976-4d2c-9146-d79de83f2fb0"
+version = "0.1.13"
+
+[[deps.IfElse]]
+git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.1"
 
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
@@ -391,6 +524,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "TOML", "Zlib_jll", "libLLVM
 git-tree-sha1 = "b8dbf2938b12378bb856d2372bc7b0737dfe7adb"
 uuid = "86de99a1-58d6-5da7-8064-bd56ce2e322c"
 version = "14.0.6+0"
+
+[[deps.LayoutPointers]]
+deps = ["ArrayInterface", "ArrayInterfaceOffsetArrays", "ArrayInterfaceStaticArrays", "LinearAlgebra", "ManualMemory", "SIMDTypes", "Static"]
+git-tree-sha1 = "7e34177793212f6d64d045ee47d2883f09fffacc"
+uuid = "10f19ff3-798f-405d-979b-55457f8fc047"
+version = "0.1.12"
 
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
@@ -433,6 +572,11 @@ repo-url = "https://github.com/giordano/MCAnalyzer.jl"
 uuid = "a81df072-f4bb-11e8-03d3-cfaeda626d18"
 version = "0.3.3"
 
+[[deps.ManualMemory]]
+git-tree-sha1 = "bcaef4fc7a0cfe2cba636d84cda54b5e4e4ca3cd"
+uuid = "d125e4d3-2237-4719-b19c-fa641b8a4667"
+version = "0.1.8"
+
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -452,6 +596,12 @@ version = "2022.10.11"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
+
+[[deps.OffsetArrays]]
+deps = ["Adapt"]
+git-tree-sha1 = "f71d8950b724e9ff6110fc948dff5a329f901d64"
+uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+version = "1.12.8"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -495,6 +645,17 @@ uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
 
+[[deps.SIMDTypes]]
+git-tree-sha1 = "330289636fb8107c5f32088d2741e9fd7a061a5c"
+uuid = "94e857df-77ce-4151-89e5-788b33177be4"
+version = "0.1.0"
+
+[[deps.SLEEFPirates]]
+deps = ["IfElse", "Static", "VectorizationBase"]
+git-tree-sha1 = "c8679919df2d3c71f74451321f1efea6433536cc"
+uuid = "476501e8-09a2-5ece-8869-fb82de89a1fa"
+version = "0.6.37"
+
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 
@@ -510,10 +671,31 @@ uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
+[[deps.Static]]
+deps = ["IfElse"]
+git-tree-sha1 = "c35b107b61e7f34fa3f124026f2a9be97dea9e1c"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "0.8.3"
+
+[[deps.StaticArrays]]
+deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
+git-tree-sha1 = "ffc098086f35909741f71ce21d03dadf0d2bfa76"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "1.5.11"
+
+[[deps.StaticArraysCore]]
+git-tree-sha1 = "6b7ba252635a5eff6a0b0664a41ee140a1c9e72a"
+uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+version = "1.4.0"
+
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 version = "1.9.0"
+
+[[deps.SuiteSparse]]
+deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
+uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[deps.SuiteSparse_jll]]
 deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
@@ -542,6 +724,12 @@ uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
+
+[[deps.VectorizationBase]]
+deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "IfElse", "LayoutPointers", "Libdl", "LinearAlgebra", "SIMDTypes", "Static"]
+git-tree-sha1 = "fc79d0f926592ecaeaee164f6a4ca81b51115c3b"
+uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
+version = "0.21.56"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
@@ -607,11 +795,21 @@ version = "17.4.0+0"
 # ╠═3f7c22ac-68c3-4ed3-92de-4ee211c51e91
 # ╠═b9562ee7-b963-4139-9792-75bde2051320
 # ╠═ad4df53d-2136-43c4-9082-f20bfbb4c7e7
+# ╟─3b9a76fa-65de-48a0-9bc5-b90e7f6fbf72
+# ╠═0d69fbf7-45f1-4358-9ba2-8be44e37e25e
+# ╠═43ef43d1-f087-4421-84b0-30089ed2d831
+# ╠═350dd29d-b476-4a21-94ab-5d45420f666b
+# ╟─06f2e7b1-dabd-4a62-8b0e-4efa5d86cd14
+# ╠═a7a87dee-b4bd-4e5d-9053-d57fdc3ecc3b
 # ╟─ba4bfc3e-f2df-4558-b4a1-27af1443139b
 # ╠═c8308e19-bbcd-4b7b-8e07-47af06fc07c8
+# ╟─c6b74fd3-8714-48bb-a76a-e2a40137b174
+# ╠═441f3101-b07e-425a-ab7a-82b0cce032b1
 # ╠═a08b62ed-f963-4778-a80d-be4d5409d34c
 # ╠═0e3f1a19-58e4-444f-91b9-cbe4e8f2176e
 # ╠═e1efa21f-2fa2-4e48-991b-e39a86df4ac2
 # ╠═357549cb-0171-4765-81da-28d928676a87
+# ╠═dcd55c5a-bef7-4506-afaf-1f37086d0a3b
+# ╠═71e12ed6-ef18-4f0c-a95a-cdcba8397a2b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
