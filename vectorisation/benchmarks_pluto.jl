@@ -266,6 +266,62 @@ md"### Other functions"
 @vec_bench f_pow_llvm_fast!(y, x)
   ╠═╡ =#
 
+# ╔═╡ 57283cc6-05e1-4173-aa93-79484d6f5706
+md"""
+### How about the `axpy` function?
+"""
+
+# ╔═╡ 6bb8c62d-149e-4f2d-bf6c-06e8c5e52fd0
+import LinearAlgebra: BLAS
+
+# ╔═╡ 6e5f37bf-6e9d-4c1f-8332-909debcff26a
+md"""
+[`FujitsuBLAS.jl`](https://github.com/giordano/FujitsuBLAS.jl) is a small package I created to automatically forward all BLAS calls in Julia to Fujitsu BLAS with negligible overhead.
+"""
+
+# ╔═╡ 19506cf9-1ec0-4a24-981f-093fafd2e92e
+import FujitsuBLAS
+
+# ╔═╡ 4a53a3e2-91a7-480a-a4bc-b369905fd54f
+function axpy!(y::Vector{T}, a::T, x::Vector{T}) where {T<:Number}
+	@simd for idx in eachindex(x, y)
+		@inbounds y[idx] = muladd(a, x[idx], y[idx])
+	end
+	return y
+end
+
+# ╔═╡ c68b8519-a9ea-47c9-a6d8-7ad101dd2151
+@vec_bench axpy!(y, $(rand()), x)
+
+# ╔═╡ 35a2a857-1c0b-4967-bb9f-fd3a9ff20be2
+# ╠═╡ disabled = true
+#=╠═╡
+@vec_bench BLAS.axpy!($(rand()), x, y)
+  ╠═╡ =#
+
+# ╔═╡ f6dd8a66-c881-4775-9978-b58d645399b2
+md"""
+In hindsight it wasn't even necessary to define a new `axpy` function, broadcasting `muladd` would have been sufficient.
+"""
+
+# ╔═╡ 71b436a2-dd2f-436d-9703-f9f2fabbd6d7
+# ╠═╡ disabled = true
+#=╠═╡
+@vec_bench y .= muladd.($(rand()), x, y)
+  ╠═╡ =#
+
+# ╔═╡ c6b6c6c1-df08-4888-bfd8-49ebf8465550
+let T = Float16
+	code_llvm(axpy!, (Vector{T}, T, Vector{T}); debuginfo=:none)
+	# code_llvm(broadcast, (typeof(muladd), T, Vector{T}, Vector{T}); debuginfo=:none)
+end
+
+# ╔═╡ 9e6511a8-096f-423d-886d-0c97f6ad64ef
+let T = Float16
+	code_native(axpy!, (Vector{T}, T, Vector{T}); debuginfo=:none)
+	# code_native(broadcast, (typeof(muladd), T, Vector{T}, Vector{T}); debuginfo=:none)
+end
+
 # ╔═╡ 3b9a76fa-65de-48a0-9bc5-b90e7f6fbf72
 md"""
 ### Can we do any better with Julia?
@@ -354,11 +410,14 @@ timeline(f_marked!, (typeof(SLEEFPirates.sin_fast), Vector{Float64}, Vector{Floa
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+FujitsuBLAS = "32aa7d10-2208-4269-9553-8a2b02007e37"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MCAnalyzer = "a81df072-f4bb-11e8-03d3-cfaeda626d18"
 SLEEFPirates = "476501e8-09a2-5ece-8869-fb82de89a1fa"
 
 [compat]
 BenchmarkTools = "~1.3.2"
+FujitsuBLAS = "~1.0.0"
 MCAnalyzer = "~0.3.3"
 SLEEFPirates = "~0.6.37"
 """
@@ -369,7 +428,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0-DEV"
 manifest_format = "2.0"
-project_hash = "ce6fcab19b9b3ca73070bb8f33cd59f7ca09d95f"
+project_hash = "4850d4e0a8f659cd9270d05230fcdfae83abc19c"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -473,6 +532,14 @@ version = "0.1.8"
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
+
+[[deps.FujitsuBLAS]]
+deps = ["Libdl", "LinearAlgebra"]
+git-tree-sha1 = "aa50510b5856dd159cd2eda8e04a1d894b22b572"
+repo-rev = "2f909948094f7c1f69d7e19a789713778c63f799"
+repo-url = "https://github.com/giordano/FujitsuBLAS.jl"
+uuid = "32aa7d10-2208-4269-9553-8a2b02007e37"
+version = "1.0.0"
 
 [[deps.GPUCompiler]]
 deps = ["ExprTools", "InteractiveUtils", "LLVM", "Libdl", "Logging", "TimerOutputs", "UUIDs"]
@@ -795,6 +862,17 @@ version = "17.4.0+0"
 # ╠═3f7c22ac-68c3-4ed3-92de-4ee211c51e91
 # ╠═b9562ee7-b963-4139-9792-75bde2051320
 # ╠═ad4df53d-2136-43c4-9082-f20bfbb4c7e7
+# ╟─57283cc6-05e1-4173-aa93-79484d6f5706
+# ╠═6bb8c62d-149e-4f2d-bf6c-06e8c5e52fd0
+# ╟─6e5f37bf-6e9d-4c1f-8332-909debcff26a
+# ╠═19506cf9-1ec0-4a24-981f-093fafd2e92e
+# ╠═4a53a3e2-91a7-480a-a4bc-b369905fd54f
+# ╠═c68b8519-a9ea-47c9-a6d8-7ad101dd2151
+# ╠═35a2a857-1c0b-4967-bb9f-fd3a9ff20be2
+# ╟─f6dd8a66-c881-4775-9978-b58d645399b2
+# ╠═71b436a2-dd2f-436d-9703-f9f2fabbd6d7
+# ╠═c6b6c6c1-df08-4888-bfd8-49ebf8465550
+# ╠═9e6511a8-096f-423d-886d-0c97f6ad64ef
 # ╟─3b9a76fa-65de-48a0-9bc5-b90e7f6fbf72
 # ╠═0d69fbf7-45f1-4358-9ba2-8be44e37e25e
 # ╠═43ef43d1-f087-4421-84b0-30089ed2d831
