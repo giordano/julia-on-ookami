@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.16
+# v0.19.17
 
 using Markdown
 using InteractiveUtils
@@ -428,7 +428,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.0-DEV"
 manifest_format = "2.0"
-project_hash = "4850d4e0a8f659cd9270d05230fcdfae83abc19c"
+project_hash = "bfddcb143e788c291bcda3edd7ece62917f14eb1"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
