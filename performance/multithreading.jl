@@ -12,6 +12,7 @@ begin
 	using FLoops
 	using Hwloc
 	using Atomix: @atomic, @atomicswap, @atomicreplace
+	using PlutoUI
 end
 
 # ╔═╡ ef4d2b3d-3d4a-4228-91ff-d7eaa5a32bad
@@ -160,6 +161,32 @@ end
 # ╔═╡ 52644026-9d33-4a53-91e1-4f03a39eee37
 πₐₚₚᵣₒₓ = monte_carlo_pi(2^12)
 
+# ╔═╡ 2d83f60c-7f15-4aaa-9774-7d7d060e2dc7
+md"""
+## ThreadPinning.jl
+"""
+
+# ╔═╡ d0a1b198-cb50-4c67-8332-a1fd93df2350
+with_terminal() do
+	pinthreads(:random)
+	threadinfo()
+end
+
+# ╔═╡ 76f2a37f-9e65-4c6a-b03a-e1fcc9b2af1d
+with_terminal() do
+	pinthreads(:compact)
+	threadinfo()
+end
+
+# ╔═╡ 24bb7928-a0d6-432e-bbd1-497198378769
+with_terminal() do
+	pinthreads(:spread)
+	threadinfo()
+end
+
+# ╔═╡ d0f6dfad-8917-48e8-a468-a3a932706af4
+
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -167,6 +194,7 @@ Atomix = "a9b6321e-bd34-4604-b9c9-b65b8de01458"
 FLoops = "cc61a311-1640-44b5-9fba-1b764f453329"
 Hwloc = "0e44f5e4-bd66-52a0-8798-143a42290a1d"
 LIKWID = "bf22376a-e803-4184-b2ed-56326e3bff83"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 ThreadPinning = "811555cd-349b-4f26-b7bc-1f208b848042"
 
 [compat]
@@ -174,6 +202,7 @@ Atomix = "~0.1.0"
 FLoops = "~0.2.1"
 Hwloc = "~2.2.0"
 LIKWID = "~0.4.3"
+PlutoUI = "~0.7.49"
 ThreadPinning = "~0.6.2"
 """
 
@@ -183,7 +212,13 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.3"
 manifest_format = "2.0"
-project_hash = "293ef02fd5477e5efd7aaade2bb41dc505558273"
+project_hash = "3d16d39512bca9338afb7c41524c22aff8edd3b7"
+
+[[deps.AbstractPlutoDingetjes]]
+deps = ["Pkg"]
+git-tree-sha1 = "8eaf9f1b4921132a4cff3f36a1d9ba923b14a481"
+uuid = "6e696c72-6542-2067-7265-42206c756150"
+version = "1.1.4"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra"]
@@ -227,6 +262,12 @@ version = "0.1.1"
 git-tree-sha1 = "eb4cb44a499229b3b8426dcfb5dd85333951ff90"
 uuid = "fa961155-64e5-5f13-b03f-caf6b980ea82"
 version = "0.4.2"
+
+[[deps.ColorTypes]]
+deps = ["FixedPointNumbers", "Random"]
+git-tree-sha1 = "eb7f0f8307f71fac7c606984ea5fb2817275d6e4"
+uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
+version = "0.11.4"
 
 [[deps.Compat]]
 deps = ["Dates", "LinearAlgebra", "UUIDs"]
@@ -308,6 +349,12 @@ version = "0.1.1"
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
+[[deps.FixedPointNumbers]]
+deps = ["Statistics"]
+git-tree-sha1 = "335bfdceacc84c5cdf16aadc768aa5ddfc5383cc"
+uuid = "53c48c17-4a7d-5ca2-90c5-79b7896eea93"
+version = "0.8.4"
+
 [[deps.Formatting]]
 deps = ["Printf"]
 git-tree-sha1 = "8339d61043228fdd3eb658d86c926cb282ae72a8"
@@ -330,6 +377,24 @@ git-tree-sha1 = "88c403452c6557786b0a08256b224cc1a6670c71"
 uuid = "e33a78d0-f292-5ffc-b300-72abe9b543c8"
 version = "2.8.0+1"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.4"
+
+[[deps.HypertextLiteral]]
+deps = ["Tricks"]
+git-tree-sha1 = "c47c5fa4c5308f27ccaac35504858d8914e102f9"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.9.4"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "f7be53659ab06ddc986428d3a9dcc95f6fa6705a"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.2"
+
 [[deps.InitialValues]]
 git-tree-sha1 = "4da0f88e9a39111c2fa3add390ab15f3a44f3ca3"
 uuid = "22cec73e-a1b8-11e9-2c92-598750a2cf9c"
@@ -349,6 +414,12 @@ deps = ["Preferences"]
 git-tree-sha1 = "abc9885a7ca2052a736a600f7fa66209f96506e1"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
 version = "1.4.1"
+
+[[deps.JSON]]
+deps = ["Dates", "Mmap", "Parsers", "Unicode"]
+git-tree-sha1 = "3c837543ddb02250ef42f4738347454f95079d4e"
+uuid = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+version = "0.21.3"
 
 [[deps.JuliaVariables]]
 deps = ["MLStyle", "NameResolution"]
@@ -395,6 +466,11 @@ uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
 
 [[deps.MLStyle]]
 git-tree-sha1 = "060ef7956fef2dc06b0e63b294f7dbfbcbdc7ea2"
@@ -449,10 +525,22 @@ git-tree-sha1 = "85f8e6578bf1f9ee0d11e7bb1b1456435479d47c"
 uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.4.1"
 
+[[deps.Parsers]]
+deps = ["Dates", "SnoopPrecompile"]
+git-tree-sha1 = "b64719e8b4504983c7fca6cc9db3ebc8acc2a4d6"
+uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+version = "2.5.1"
+
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 version = "1.8.0"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "eadad7b14cf046de6eb41f13c9275e5aa2711ab6"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.49"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -577,6 +665,16 @@ git-tree-sha1 = "c42fa452a60f022e9e087823b47e5a5f8adc53d5"
 uuid = "28d57a85-8fef-5791-bfe6-a80928e7c999"
 version = "0.4.75"
 
+[[deps.Tricks]]
+git-tree-sha1 = "6bac775f2d42a611cdfcd1fb217ee719630c4175"
+uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
+version = "0.1.6"
+
+[[deps.URIs]]
+git-tree-sha1 = "ac00576f90d8a259f2c9d823e91d1de3fd44d348"
+uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
+version = "1.4.1"
+
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
@@ -645,5 +743,10 @@ version = "17.4.0+0"
 # ╟─f12f7d7c-4a46-47b4-9112-efb1d3c93675
 # ╠═11fee148-8e4a-4f39-9bdc-16741e92f93a
 # ╠═52644026-9d33-4a53-91e1-4f03a39eee37
+# ╟─2d83f60c-7f15-4aaa-9774-7d7d060e2dc7
+# ╠═d0a1b198-cb50-4c67-8332-a1fd93df2350
+# ╠═76f2a37f-9e65-4c6a-b03a-e1fcc9b2af1d
+# ╠═24bb7928-a0d6-432e-bbd1-497198378769
+# ╠═d0f6dfad-8917-48e8-a468-a3a932706af4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
