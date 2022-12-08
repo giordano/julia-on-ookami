@@ -10,7 +10,12 @@
 # Load MVAPICH2 and Julia
 module load slurm gcc/11.1.0 mvapich2/gcc11/2.3.6 julia/nightly-5da8d5f17a
 
-# Run Julia with MPI.  Remember to specify the project!
+# Automatically set the number of Julia threads depending on number of Slurm threads
+export JULIA_NUM_THREADS=${SLURM_CPUS_PER_TASK:=1}
+
+# Run Julia with MPI.  Remember to specify the project!  Optionally, you can
+# replace `srun` with MPI.jl wrapper:
+# <https://juliaparallel.org/MPI.jl/stable/usage/#Julia-wrapper-for-mpiexec>.
 srun julia --project=mvapich2 examples/01-hello.jl
 # srun julia --project=mvapich2 examples/02-broadcast.jl
 # srun julia --project=mvapich2 examples/03-reduce.jl

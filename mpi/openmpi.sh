@@ -16,7 +16,12 @@ export UCX_TLS=rc
 # Load OpenMPI and Julia
 module load slurm gcc/12.1.0 ucx/1.11.2 openmpi/gcc12.1.0/4.1.4 julia/nightly-5da8d5f17a
 
-# Run Julia with MPI.  Remember to specify the project!
+# Automatically set the number of Julia threads depending on number of Slurm threads
+export JULIA_NUM_THREADS=${SLURM_CPUS_PER_TASK:=1}
+
+# Run Julia with MPI.  Remember to specify the project!  Optionally, you can
+# replace `mpiexec` with MPI.jl wrapper:
+# <https://juliaparallel.org/MPI.jl/stable/usage/#Julia-wrapper-for-mpiexec>.
 mpiexec --map-by ppr:1:node:pe=48 --report-bindings julia --project=openmpi examples/01-hello.jl
 # mpiexec --map-by ppr:1:node:pe=48 --report-bindings julia --project=openmpi examples/02-broadcast.jl
 # mpiexec --map-by ppr:1:node:pe=48 --report-bindings julia --project=openmpi examples/03-reduce.jl
