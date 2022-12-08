@@ -1,0 +1,6 @@
+[MPIPreferences]
+_format = "1.0"
+abi = "MPICH"
+binary = "system"
+libmpi = "libmpi"
+mpiexec = "srun"
