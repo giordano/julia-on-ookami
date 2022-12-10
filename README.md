@@ -2,7 +2,7 @@
 
 This repository contains some material for the "Julia on A64FX" webinar held for users of
 the [Ookami](https://www.stonybrook.edu/ookami/) system @ Stony Brook University on
-2022-12-08.
+2022-12-08 ([video recording](https://www.youtube.com/watch?v=kZNYFWGnixA)).
 
 Some generic information about Julia on A64FX can be found in the repository
 [julia-on-fugaku](https://github.com/giordano/julia-on-fugaku/), and the paper [Productivity
