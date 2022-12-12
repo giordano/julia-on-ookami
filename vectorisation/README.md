@@ -22,3 +22,7 @@ be the same as `<REMOTE PORT>` if available).
 
 Note that everything in this directory assumes you are on Ookami, because Ookami-specific
 modules are used, but you should be able to adapt the code to another system.
+
+If you don't have access to Ookami, a static HTML export of the notebook is available in the
+file [`benchmarks_pluto.html`](./benchmarks_pluto.html)
+([preview](https://refined-github-html-preview.kidonng.workers.dev/giordano/julia-on-ookami/raw/main/vectorisation/benchmarks_pluto.html)).
